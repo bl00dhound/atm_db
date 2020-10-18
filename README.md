@@ -1,4 +1,5 @@
 # ATM database
+See the full ER diagram [here](https://bl00dhound.github.io/atm_db/)
 
 ### Starting.
 
