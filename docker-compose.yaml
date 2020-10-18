@@ -10,3 +10,4 @@ services:
       - 5432:5432
     volumes:
       - ./scripts/10_init.sql:/docker-entrypoint-initdb.d/10_init.sql
+      - ./scripts/20_fill_dictionaries.sql:/docker-entrypoint-initdb.d/20_fill_dictionaries.sql
