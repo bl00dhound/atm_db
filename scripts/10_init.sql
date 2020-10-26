@@ -1,10 +1,20 @@
 CREATE SCHEMA IF NOT EXISTS atm;
 
+CREATE OR REPLACE FUNCTION upd_updated_at() RETURNS TRIGGER
+    LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$;
+
 CREATE SEQUENCE atm.account_type_id_seq START WITH 1;
 
-CREATE SEQUENCE atm.accounts_account_type_id_seq START WITH 1;
-
 CREATE SEQUENCE atm.banks_id_seq START WITH 1;
+
+CREATE SEQUENCE atm.cards_id_seq START WITH 1;
 
 CREATE SEQUENCE atm.card_providers_id_seq START WITH 1;
 
@@ -33,9 +43,9 @@ CREATE SEQUENCE atm.users_id_seq START WITH 1;
 CREATE SEQUENCE atm.users_location_id_seq START WITH 1;
 
 CREATE  TABLE atm.account_type ( 
-	id                   integer DEFAULT nextval('atm.account_type_id_seq'::regclass) NOT NULL ,
-	title                varchar(100)   ,
-	CONSTRAINT pk_account_type_id PRIMARY KEY ( id )
+  id                   integer DEFAULT nextval('atm.account_type_id_seq'::regclass) NOT NULL ,
+  title                varchar(100)   ,
+  CONSTRAINT pk_account_type_id PRIMARY KEY ( id )
  );
 
 COMMENT ON TABLE atm.account_type IS 'тип рахунку';
@@ -45,11 +55,11 @@ COMMENT ON COLUMN atm.account_type.id IS 'account type identifier';
 COMMENT ON COLUMN atm.account_type.title IS 'назва типу рахунку';
 
 CREATE  TABLE atm.banks ( 
-	id                   integer DEFAULT nextval('atm.banks_id_seq'::regclass) NOT NULL ,
-	title                varchar(255)  NOT NULL ,
-	country_id           integer  NOT NULL ,
-	address              varchar(255)  NOT NULL ,
-	CONSTRAINT pk_banks_id PRIMARY KEY ( id )
+  id                   integer DEFAULT nextval('atm.banks_id_seq'::regclass) NOT NULL ,
+  title                varchar(255)  NOT NULL ,
+  location_id integer  NOT NULL ,
+  address              varchar(255)  NOT NULL ,
+  CONSTRAINT pk_banks_id PRIMARY KEY ( id )
  );
 
 COMMENT ON TABLE atm.banks IS 'банки-партнери';
@@ -58,14 +68,14 @@ COMMENT ON COLUMN atm.banks.id IS 'ідентифікатор банку';
 
 COMMENT ON COLUMN atm.banks.title IS 'назва банку';
 
-COMMENT ON COLUMN atm.banks.country_id IS 'ідентифікатор країни банку';
+COMMENT ON COLUMN atm.banks.location_id IS 'ідентифікатор локації банку';
 
 COMMENT ON COLUMN atm.banks.address IS 'адрес головного офісу банку';
 
 CREATE  TABLE atm.card_providers ( 
-	id                   integer DEFAULT nextval('atm.card_providers_id_seq'::regclass) NOT NULL ,
-	title                varchar(255)  NOT NULL ,
-	CONSTRAINT pk_card_providers_id PRIMARY KEY ( id )
+  id                   integer DEFAULT nextval('atm.card_providers_id_seq'::regclass) NOT NULL ,
+  title                varchar(255)  NOT NULL ,
+  CONSTRAINT pk_card_providers_id PRIMARY KEY ( id )
  );
 
 COMMENT ON TABLE atm.card_providers IS 'постачальники пластикових карток';
@@ -75,11 +85,11 @@ COMMENT ON COLUMN atm.card_providers.id IS 'ідентифікатор пост�
 COMMENT ON COLUMN atm.card_providers.title IS 'назва постачальника';
 
 CREATE  TABLE atm.currencies ( 
-	id                   integer DEFAULT nextval('atm.currencies_id_seq'::regclass) NOT NULL ,
-	title                varchar(100)  NOT NULL ,
-	currency_sign        char(2)   ,
-	code                 varchar(3)  NOT NULL ,
-	CONSTRAINT pk_currencies_id PRIMARY KEY ( id )
+  id                   integer DEFAULT nextval('atm.currencies_id_seq'::regclass) NOT NULL ,
+  title                varchar(100)  NOT NULL ,
+  currency_sign        char(2)   ,
+  code                 varchar(3)  NOT NULL ,
+  CONSTRAINT pk_currencies_id PRIMARY KEY ( id )
  );
 
 CREATE UNIQUE INDEX uniq_idx_currencies_title ON atm.currencies ( title );
@@ -97,9 +107,9 @@ COMMENT ON COLUMN atm.currencies.currency_sign IS 'символ валюти, я
 COMMENT ON COLUMN atm.currencies.code IS 'ISO код валюти, 3 символи';
 
 CREATE  TABLE atm.document_types ( 
-	id                   integer DEFAULT nextval('atm.document_types_id_seq'::regclass) NOT NULL ,
-	title                varchar(255)  NOT NULL ,
-	CONSTRAINT pk_document_types_id PRIMARY KEY ( id )
+  id                   integer DEFAULT nextval('atm.document_types_id_seq'::regclass) NOT NULL ,
+  title                varchar(255)  NOT NULL ,
+  CONSTRAINT pk_document_types_id PRIMARY KEY ( id )
  );
 
 CREATE UNIQUE INDEX uniq_idx_document_types_title ON atm.document_types ( title );
@@ -113,10 +123,10 @@ COMMENT ON COLUMN atm.document_types.id IS 'ідентифікатор доку�
 COMMENT ON COLUMN atm.document_types.title IS 'назва документу';
 
 CREATE  TABLE atm.languages ( 
-	id                   smallint DEFAULT nextval('atm.languages_id_seq'::regclass) NOT NULL ,
-	"iso_639-1"          varchar(20)  NOT NULL ,
-	title                varchar(255)  NOT NULL ,
-	CONSTRAINT pk_languages_id PRIMARY KEY ( id )
+  id                   smallint DEFAULT nextval('atm.languages_id_seq'::regclass) NOT NULL ,
+  "iso_639-1"          varchar(20)  NOT NULL ,
+  title                varchar(255)  NOT NULL ,
+  CONSTRAINT pk_languages_id PRIMARY KEY ( id )
  );
 
 CREATE UNIQUE INDEX uniq_idx_languages_title ON atm.languages ( title );
@@ -136,17 +146,13 @@ COMMENT ON COLUMN atm.languages."iso_639-1" IS 'ISO 639-1 стандарт дл�
 COMMENT ON COLUMN atm.languages.title IS 'повна назва мови';
 
 CREATE  TABLE atm.locations ( 
-	id                   integer DEFAULT nextval('atm.locations_id_seq'::regclass) NOT NULL ,
-	code                 varchar(2)  NOT NULL ,
-	city                 varchar(255)   ,
-	region               varchar(255)   ,
-	country_name         varchar(255)   ,
-	CONSTRAINT pk_tbl_id PRIMARY KEY ( id )
+  id                   integer DEFAULT nextval('atm.locations_id_seq'::regclass) NOT NULL ,
+  code                 varchar(2)  NOT NULL ,
+  city                 varchar(255)   ,
+  region               varchar(255)   ,
+  country_name         varchar(255)   ,
+  CONSTRAINT pk_tbl_id PRIMARY KEY ( id )
  );
-
-CREATE UNIQUE INDEX uniq_idx_location_code ON atm.locations ( code );
-
-COMMENT ON INDEX atm.uniq_idx_location_code IS 'uniq key for ISO code';
 
 COMMENT ON TABLE atm.locations IS 'таблиця країн, регіонів, міст, сел.';
 
@@ -159,9 +165,9 @@ COMMENT ON COLUMN atm.locations.region IS 'регіон (область, кра�
 COMMENT ON COLUMN atm.locations.country_name IS 'назва країни';
 
 CREATE  TABLE atm.timezones ( 
-	id                   integer DEFAULT nextval('atm.timezones_id_seq'::regclass) NOT NULL ,
-	title                varchar(255)  NOT NULL ,
-	CONSTRAINT pk_timezones_id PRIMARY KEY ( id )
+  id                   integer DEFAULT nextval('atm.timezones_id_seq'::regclass) NOT NULL ,
+  title                varchar(255)  NOT NULL ,
+  CONSTRAINT pk_timezones_id PRIMARY KEY ( id )
  );
 
 CREATE UNIQUE INDEX uniq_idx_timezones_title ON atm.timezones ( title );
@@ -175,9 +181,9 @@ COMMENT ON COLUMN atm.timezones.id IS 'primary key';
 COMMENT ON COLUMN atm.timezones.title IS 'назва таймзони';
 
 CREATE  TABLE atm.transaction_statuses ( 
-	id                   integer DEFAULT nextval('atm.transaction_statuses_id_seq'::regclass) NOT NULL ,
-	title                varchar(100)  NOT NULL ,
-	CONSTRAINT pk_transaction_statuses_id PRIMARY KEY ( id )
+  id                   integer DEFAULT nextval('atm.transaction_statuses_id_seq'::regclass) NOT NULL ,
+  title                varchar(100)  NOT NULL ,
+  CONSTRAINT pk_transaction_statuses_id PRIMARY KEY ( id )
  );
 
 CREATE UNIQUE INDEX uniq_idx_transaction_statuses ON atm.transaction_statuses ( title );
@@ -191,9 +197,9 @@ COMMENT ON COLUMN atm.transaction_statuses.id IS 'status identifier';
 COMMENT ON COLUMN atm.transaction_statuses.title IS 'назва статусу транзакції';
 
 CREATE  TABLE atm.transaction_type ( 
-	id                   integer DEFAULT nextval('atm.transaction_type_id_seq'::regclass) NOT NULL ,
-	title                varchar(100)  NOT NULL ,
-	CONSTRAINT pk_transaction_type_id_id PRIMARY KEY ( id )
+  id                   integer DEFAULT nextval('atm.transaction_type_id_seq'::regclass) NOT NULL ,
+  title                varchar(100)  NOT NULL ,
+  CONSTRAINT pk_transaction_type_id_id PRIMARY KEY ( id )
  );
 
 CREATE UNIQUE INDEX idx_transaction_type ON atm.transaction_type ( title );
@@ -205,9 +211,9 @@ COMMENT ON TABLE atm.transaction_type IS 'тип транзакції (опер�
 COMMENT ON COLUMN atm.transaction_type.title IS 'назва типу транзакції';
 
 CREATE  TABLE atm.user_internal_statuses ( 
-	id                   smallint DEFAULT nextval('atm.user_internal_statuses_id_seq'::regclass) NOT NULL ,
-	title                varchar(100)  NOT NULL ,
-	CONSTRAINT pk_user_internal_statuses_id PRIMARY KEY ( id )
+  id                   smallint DEFAULT nextval('atm.user_internal_statuses_id_seq'::regclass) NOT NULL ,
+  title                varchar(100)  NOT NULL ,
+  CONSTRAINT pk_user_internal_statuses_id PRIMARY KEY ( id )
  );
 
 COMMENT ON CONSTRAINT pk_user_internal_statuses_id ON atm.user_internal_statuses IS 'identifier index';
@@ -223,9 +229,9 @@ COMMENT ON COLUMN atm.user_internal_statuses.id IS 'ідентифікатор �
 COMMENT ON COLUMN atm.user_internal_statuses.title IS 'назва внутрішнього статусу';
 
 CREATE  TABLE atm.user_statuses ( 
-	id                   smallint DEFAULT nextval('atm.user_statuses_id_seq'::regclass) NOT NULL ,
-	title                varchar(100)  NOT NULL ,
-	CONSTRAINT pk_user_statuses_id PRIMARY KEY ( id )
+  id                   smallint DEFAULT nextval('atm.user_statuses_id_seq'::regclass) NOT NULL ,
+  title                varchar(100)  NOT NULL ,
+  CONSTRAINT pk_user_statuses_id PRIMARY KEY ( id )
  );
 
 CREATE UNIQUE INDEX uniq_idx_user_statuses_title ON atm.user_statuses ( title );
@@ -239,32 +245,38 @@ COMMENT ON COLUMN atm.user_statuses.id IS 'ідентифікатор стату
 COMMENT ON COLUMN atm.user_statuses.title IS 'назва статусу';
 
 CREATE  TABLE atm.users ( 
-	id                   bigint DEFAULT nextval('atm.users_id_seq'::regclass) NOT NULL ,
-	created_at           timestamptz(12) DEFAULT CURRENT_TIMESTAMP NOT NULL ,
-	updated_at           timestamptz(12) DEFAULT CURRENT_TIMESTAMP NOT NULL ,
-	removed_at           timestamptz(12)   ,
-	first_name           varchar(255)  NOT NULL ,
-	last_name            varchar(255)  NOT NULL ,
-	middle_name          varchar(255)   ,
-	primary_phone        varchar(100)  NOT NULL ,
-	additional_phone     varchar(100)   ,
-	email                varchar(255)   ,
-	status_id            smallint  NOT NULL ,
-	language_id          smallint  NOT NULL ,
-	timezone_id          smallint  NOT NULL ,
-	birthday             date   ,
-	internal_status_id   smallint  NOT NULL ,
-	location_id          integer DEFAULT nextval('atm.users_location_id_seq'::regclass) NOT NULL ,
-	zip                  varchar(100)  NOT NULL ,
-	adress_1             varchar(255)  NOT NULL ,
-	address_2            varchar(255)   ,
-	ipn                  varchar(12)  NOT NULL ,
-	document_number      varchar(100)  NOT NULL ,
-	document_type_id     smallint DEFAULT nextval('atm.users_document_type_id_seq'::regclass) NOT NULL ,
-	document_date        date   ,
-	document_authority   varchar(255)   ,
-	CONSTRAINT pk_users_id PRIMARY KEY ( id )
+  id                   bigint DEFAULT nextval('atm.users_id_seq'::regclass) NOT NULL ,
+  created_at           timestamptz(12) DEFAULT CURRENT_TIMESTAMP NOT NULL ,
+  updated_at           timestamptz(12) DEFAULT CURRENT_TIMESTAMP NOT NULL ,
+  removed_at           timestamptz(12)   ,
+  first_name           varchar(255)  NOT NULL ,
+  last_name            varchar(255)  NOT NULL ,
+  middle_name          varchar(255)   ,
+  primary_phone        varchar(100)  NOT NULL ,
+  additional_phone     varchar(100)   ,
+  email                varchar(255)   ,
+  status_id            smallint  NOT NULL ,
+  language_id          smallint  NOT NULL ,
+  timezone_id          smallint  NOT NULL ,
+  birthday             date   ,
+  internal_status_id   smallint  NOT NULL ,
+  location_id          integer DEFAULT nextval('atm.users_location_id_seq'::regclass) NOT NULL ,
+  zip                  varchar(100)  NOT NULL ,
+  address_1             varchar(255)  NOT NULL ,
+  address_2            varchar(255)   ,
+  ipn                  varchar(12)  NOT NULL ,
+  document_number      varchar(100)  NOT NULL ,
+  document_type_id     smallint DEFAULT nextval('atm.users_document_type_id_seq'::regclass) NOT NULL ,
+  document_date        date   ,
+  document_authority   varchar(255)   ,
+  CONSTRAINT pk_users_id PRIMARY KEY ( id )
  );
+
+CREATE TRIGGER t_users_upd
+  BEFORE UPDATE
+  ON atm.users
+  FOR EACH ROW
+EXECUTE PROCEDURE upd_updated_at();
 
 CREATE INDEX idx_users_created_at ON atm.users ( created_at  DESC  );
 
@@ -312,7 +324,7 @@ COMMENT ON COLUMN atm.users.location_id IS 'місто, або локація к
 
 COMMENT ON COLUMN atm.users.zip IS 'адресний індекс';
 
-COMMENT ON COLUMN atm.users.adress_1 IS 'перша строка адресу';
+COMMENT ON COLUMN atm.users.address_1 IS 'перша строка адресу';
 
 COMMENT ON COLUMN atm.users.address_2 IS 'друга строка адресу';
 
@@ -327,13 +339,13 @@ COMMENT ON COLUMN atm.users.document_date IS 'дата видачі докуме
 COMMENT ON COLUMN atm.users.document_authority IS 'орган що видав документ';
 
 CREATE  TABLE atm.accounts ( 
-	uuid                 uuid  NOT NULL ,
-	user_id              integer  NOT NULL ,
-	currency_id          integer  NOT NULL ,
-	amount               numeric(12,2)  NOT NULL ,
-	bank_id              integer  NOT NULL ,
-	account_type_id      smallint DEFAULT nextval('atm.accounts_account_type_id_seq'::regclass) NOT NULL ,
-	CONSTRAINT pk_accounts_uuid PRIMARY KEY ( uuid )
+  uuid                 uuid  NOT NULL ,
+  user_id              integer  NOT NULL ,
+  currency_id          integer  NOT NULL ,
+  amount               numeric(12,2)  NOT NULL ,
+  bank_id              integer  NOT NULL ,
+  account_type_id      smallint NOT NULL ,
+  CONSTRAINT pk_accounts_uuid PRIMARY KEY ( uuid )
  );
 
 COMMENT ON TABLE atm.accounts IS 'рахунки';
@@ -351,16 +363,16 @@ COMMENT ON COLUMN atm.accounts.bank_id IS 'ідентифікатор банку
 COMMENT ON COLUMN atm.accounts.account_type_id IS 'тип рахунку користувача';
 
 CREATE  TABLE atm.cards ( 
-	id                   bigint  NOT NULL ,
-	"owner"              varchar(100)  NOT NULL ,
-	expire               date  NOT NULL ,
-	provider_id          integer  NOT NULL ,
-	card_number          varchar(40)  NOT NULL ,
-	pin                  varchar(100)  NOT NULL ,
-	account_uuid         uuid  NOT NULL ,
-	created_at           timestamptz(12)  NOT NULL ,
-	user_id              integer  NOT NULL ,
-	CONSTRAINT pk_cards_id PRIMARY KEY ( id )
+  id                   bigint DEFAULT nextval('atm.cards_id_seq'::regclass) NOT NULL ,
+  "owner"              varchar(100)  NOT NULL ,
+  expire               date  NOT NULL ,
+  provider_id          integer  NOT NULL ,
+  card_number          varchar(40)  NOT NULL ,
+  pin                  varchar(100)  NOT NULL ,
+  account_uuid         uuid  NOT NULL ,
+  created_at           timestamptz(12)  NOT NULL ,
+  user_id              integer  NOT NULL ,
+  CONSTRAINT pk_cards_id PRIMARY KEY ( id )
  );
 
 CREATE INDEX idx_cards_card_number ON atm.cards ( card_number  ASC  );
@@ -387,51 +399,51 @@ COMMENT ON COLUMN atm.cards.created_at IS 'дата видання картки'
 
 COMMENT ON COLUMN atm.cards.user_id IS 'ідентифікатор користувача в системі';
 
-CREATE  TABLE atm.transactions_log ( 
-	from_account_uuid    uuid  NOT NULL ,
-	to_account_uuid      integer   ,
-	transaction_type_id  smallint  NOT NULL ,
-	created_at           timestamptz(12) DEFAULT CURRENT_TIMESTAMP  ,
-	amount               numeric(12,2)  NOT NULL ,
-	status_id            smallint  NOT NULL ,
-	card_id              bigint  NOT NULL 
+CREATE  TABLE atm.transaction_logs ( 
+  from_account_uuid    uuid  NOT NULL ,
+  to_account_uuid      uuid,
+  transaction_type_id  smallint  NOT NULL ,
+  created_at           timestamptz(12) DEFAULT CURRENT_TIMESTAMP  ,
+  amount               numeric(12,2)  NOT NULL ,
+  status_id            smallint  NOT NULL ,
+  card_id              bigint  NOT NULL 
  );
 
-CREATE INDEX idx_transactions_log_from_account_uuid ON atm.transactions_log ( from_account_uuid  ASC  );
+CREATE INDEX idx_transaction_logs_from_account_uuid ON atm.transaction_logs ( from_account_uuid  ASC  );
 
-COMMENT ON INDEX atm.idx_transactions_log_from_account_uuid IS 'для швидкого пошуку транзакцій по номеру рахунку';
+COMMENT ON INDEX atm.idx_transaction_logs_from_account_uuid IS 'для швидкого пошуку транзакцій по номеру рахунку';
 
-CREATE INDEX idx_transactions_log ON atm.transactions_log ( transaction_type_id );
+CREATE INDEX idx_transaction_logs ON atm.transaction_logs ( transaction_type_id );
 
-COMMENT ON INDEX atm.idx_transactions_log IS 'для швидкого пошуку по типу транзакції';
+COMMENT ON INDEX atm.idx_transaction_logs IS 'для швидкого пошуку по типу транзакції';
 
-CREATE INDEX idx_transactions_log_to_account_uuid ON atm.transactions_log ( to_account_uuid  ASC  );
+CREATE INDEX idx_transaction_logs_to_account_uuid ON atm.transaction_logs ( to_account_uuid  ASC  );
 
-COMMENT ON INDEX atm.idx_transactions_log_to_account_uuid IS 'для швидкого пошуку по номеру рахунку на який зачисляються кошти';
+COMMENT ON INDEX atm.idx_transaction_logs_to_account_uuid IS 'для швидкого пошуку по номеру рахунку на який зачисляються кошти';
 
-CREATE INDEX idx_transactions_log_card_id ON atm.transactions_log ( card_id  ASC  );
+CREATE INDEX idx_transaction_logs_card_id ON atm.transaction_logs ( card_id  ASC  );
 
-COMMENT ON INDEX atm.idx_transactions_log_card_id IS 'для швидкого пошуку по номеру картки';
+COMMENT ON INDEX atm.idx_transaction_logs_card_id IS 'для швидкого пошуку по номеру картки';
 
-CREATE INDEX idx_transactions_log_created_at ON atm.transactions_log ( created_at  DESC  );
+CREATE INDEX idx_transaction_logs_created_at ON atm.transaction_logs ( created_at  DESC  );
 
-COMMENT ON INDEX atm.idx_transactions_log_created_at IS 'для швидкого пошуку по даті транзакції';
+COMMENT ON INDEX atm.idx_transaction_logs_created_at IS 'для швидкого пошуку по даті транзакції';
 
-COMMENT ON TABLE atm.transactions_log IS 'лог транзакцій (операцій)';
+COMMENT ON TABLE atm.transaction_logs IS 'лог транзакцій (операцій)';
 
-COMMENT ON COLUMN atm.transactions_log.from_account_uuid IS 'рахунок с якого виконується списання';
+COMMENT ON COLUMN atm.transaction_logs.from_account_uuid IS 'рахунок с якого виконується списання';
 
-COMMENT ON COLUMN atm.transactions_log.to_account_uuid IS 'рахунок куди  зачисляються кошти';
+COMMENT ON COLUMN atm.transaction_logs.to_account_uuid IS 'рахунок куди  зачисляються кошти';
 
-COMMENT ON COLUMN atm.transactions_log.transaction_type_id IS 'ідентифікатор типу транзакції';
+COMMENT ON COLUMN atm.transaction_logs.transaction_type_id IS 'ідентифікатор типу транзакції';
 
-COMMENT ON COLUMN atm.transactions_log.created_at IS 'дата транзакції';
+COMMENT ON COLUMN atm.transaction_logs.created_at IS 'дата транзакції';
 
-COMMENT ON COLUMN atm.transactions_log.amount IS 'сума транзакцій (може бути нижче 0)';
+COMMENT ON COLUMN atm.transaction_logs.amount IS 'сума транзакцій (може бути нижче 0)';
 
-COMMENT ON COLUMN atm.transactions_log.status_id IS 'ідентифікатор статусу транзакциї';
+COMMENT ON COLUMN atm.transaction_logs.status_id IS 'ідентифікатор статусу транзакциї';
 
-COMMENT ON COLUMN atm.transactions_log.card_id IS 'картка, що використовувалась';
+COMMENT ON COLUMN atm.transaction_logs.card_id IS 'картка, що використовувалась';
 
 ALTER TABLE atm.accounts ADD CONSTRAINT fk_accounts_users FOREIGN KEY ( user_id ) REFERENCES atm.users( id );
 
@@ -447,11 +459,11 @@ ALTER TABLE atm.cards ADD CONSTRAINT fk_cards_accounts FOREIGN KEY ( account_uui
 
 ALTER TABLE atm.cards ADD CONSTRAINT fk_cards_users FOREIGN KEY ( user_id ) REFERENCES atm.users( id );
 
-ALTER TABLE atm.transactions_log ADD CONSTRAINT fk_transactions_log_accounts FOREIGN KEY ( from_account_uuid ) REFERENCES atm.accounts( uuid );
+ALTER TABLE atm.transaction_logs ADD CONSTRAINT fk_transaction_logs_accounts FOREIGN KEY ( from_account_uuid ) REFERENCES atm.accounts( uuid );
 
-ALTER TABLE atm.transactions_log ADD CONSTRAINT fk_transactions_log_transaction_type FOREIGN KEY ( transaction_type_id ) REFERENCES atm.transaction_type( id );
+ALTER TABLE atm.transaction_logs ADD CONSTRAINT fk_transaction_logs_transaction_type FOREIGN KEY ( transaction_type_id ) REFERENCES atm.transaction_type( id );
 
-ALTER TABLE atm.transactions_log ADD CONSTRAINT fk_transactions_log_transaction_statuses FOREIGN KEY ( status_id ) REFERENCES atm.transaction_statuses( id );
+ALTER TABLE atm.transaction_logs ADD CONSTRAINT fk_transaction_logs_transaction_statuses FOREIGN KEY ( status_id ) REFERENCES atm.transaction_statuses( id );
 
 ALTER TABLE atm.users ADD CONSTRAINT fk_users_user_statuses FOREIGN KEY ( status_id ) REFERENCES atm.user_statuses( id );
 
@@ -464,4 +476,6 @@ ALTER TABLE atm.users ADD CONSTRAINT fk_users_timezones FOREIGN KEY ( timezone_i
 ALTER TABLE atm.users ADD CONSTRAINT fk_users_locations FOREIGN KEY ( location_id ) REFERENCES atm.locations( id );
 
 ALTER TABLE atm.users ADD CONSTRAINT fk_users_document_types FOREIGN KEY ( document_type_id ) REFERENCES atm.document_types( id );
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 

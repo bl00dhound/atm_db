@@ -11,3 +11,5 @@ services:
     volumes:
       - ./scripts/10_init.sql:/docker-entrypoint-initdb.d/10_init.sql
       - ./scripts/20_fill_dictionaries.sql:/docker-entrypoint-initdb.d/20_fill_dictionaries.sql
+      - ./scripts/30_fill_data.sql:/docker-entrypoint-initdb.d/30_fill_data.sql
+      - ./scripts/40_fill_accounts.sql:/docker-entrypoint-initdb.d/40_fill_accounts.sql
