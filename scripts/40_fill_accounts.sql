@@ -11,11 +11,11 @@ WITH
         SELECT array_agg(uuid) as uuids FROM accounts_uuid
     ),
      cards_data AS (
-         INSERT INTO atm.cards(owner, expire, provider_id, card_number, pin, account_uuid, created_at, user_id) VALUES
-            ('JOHN DOE', '2024-12-01', 1, '5678657856747876', '9fe8593a8a330607d76796b35c64c600', (select uuids[1] from accounts_array), now() - interval '1 year', 1),
-            ('John Doe', '2023-10-01', 2, '5679999999747876', '9fe0000a8a330607d76796b35c64c600', (select uuids[2] from accounts_array), now() - interval '10 months', 1),
-            ('JANE DOE', '2024-12-01', 1, '5633333333747876', '9fe8590000000000076796b35c64c600', (select uuids[3] from accounts_array), now() - interval '2 years', 2),
-            ('Jane Doe', '2024-12-01', 2, '5678657851111111', '9fe8593a8a3306072222222222222220', (select uuids[4] from accounts_array), now() - interval '1 year', 2)
+         INSERT INTO atm.cards(owner, expire, provider_id, card_number, pin, account_uuid, created_at) VALUES
+            ('JOHN DOE', '2024-12-01', 1, '5678657856747876', '9fe8593a8a330607d76796b35c64c600', (select uuids[1] from accounts_array), now() - interval '1 year'),
+            ('John Doe', '2023-10-01', 2, '5679999999747876', '9fe0000a8a330607d76796b35c64c600', (select uuids[2] from accounts_array), now() - interval '10 months'),
+            ('JANE DOE', '2024-12-01', 1, '5633333333747876', '9fe8590000000000076796b35c64c600', (select uuids[3] from accounts_array), now() - interval '2 years'),
+            ('Jane Doe', '2024-12-01', 2, '5678657851111111', '9fe8593a8a3306072222222222222220', (select uuids[4] from accounts_array), now() - interval '1 year')
          RETURNING id
      ),
      cards_ids_array AS (

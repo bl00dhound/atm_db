@@ -371,7 +371,6 @@ CREATE  TABLE atm.cards (
   pin                  varchar(100)  NOT NULL ,
   account_uuid         uuid  NOT NULL ,
   created_at           timestamptz(12)  NOT NULL ,
-  user_id              integer  NOT NULL ,
   CONSTRAINT pk_cards_id PRIMARY KEY ( id )
  );
 
@@ -396,8 +395,6 @@ COMMENT ON COLUMN atm.cards.pin IS 'ПІН-код (захешований)';
 COMMENT ON COLUMN atm.cards.account_uuid IS 'ідентифікатор рахунку';
 
 COMMENT ON COLUMN atm.cards.created_at IS 'дата видання картки';
-
-COMMENT ON COLUMN atm.cards.user_id IS 'ідентифікатор користувача в системі';
 
 CREATE  TABLE atm.transaction_logs ( 
   from_account_uuid    uuid  NOT NULL ,
@@ -456,8 +453,6 @@ ALTER TABLE atm.accounts ADD CONSTRAINT fk_accounts_account_type FOREIGN KEY ( a
 ALTER TABLE atm.cards ADD CONSTRAINT fk_cards_card_providers FOREIGN KEY ( provider_id ) REFERENCES atm.card_providers( id );
 
 ALTER TABLE atm.cards ADD CONSTRAINT fk_cards_accounts FOREIGN KEY ( account_uuid ) REFERENCES atm.accounts( uuid );
-
-ALTER TABLE atm.cards ADD CONSTRAINT fk_cards_users FOREIGN KEY ( user_id ) REFERENCES atm.users( id );
 
 ALTER TABLE atm.transaction_logs ADD CONSTRAINT fk_transaction_logs_accounts FOREIGN KEY ( from_account_uuid ) REFERENCES atm.accounts( uuid );
 
